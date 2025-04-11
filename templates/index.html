@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Expense Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+  <div class="max-w-2xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
+    <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Expense Tracker</h1>
+
+    <form action="/set-budget" method="post" class="mb-4 flex gap-2">
+      <input type="number" name="total" step="0.01" placeholder="Set your budget" value="{{ budget }}" required class="flex-1 p-2 border rounded">
+      <button type="submit" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">💾 Save Budget</button>
+    </form>
+
+    <form action="/add_credit" method="post" class="mb-6 flex gap-2">
+      <input type="number" name="amount" step="0.01" placeholder="Add credit" required class="flex-1 p-2 border rounded">
+      <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Add Credit</button>
+    </form>
+
+    <div class="grid grid-cols-2 gap-4 text-center text-lg font-semibold mb-6">
+      <div class="bg-green-100 p-4 rounded shadow">💸 Spent: <span class="text-green-600">${{ total_spent }}</span></div>
+      <div class="bg-yellow-100 p-4 rounded shadow">🧾 Remaining: <span class="text-yellow-600">${{ remaining }}</span></div>
+    </div>
+
+    <canvas id="categoryChart" class="mb-8"></canvas>
+
+    <a href="/add" class="block text-center mb-4 text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded">➕ Add Expense</a>
+
+    <a href="/clear" class="block text-center mb-6 text-red-500 hover:text-red-700">🧹 Clear All Expenses</a>
+
+    <ul class="space-y-4">
+      {% for e in expenses %}
+      <li class="p-4 bg-gray-50 border rounded shadow-sm flex justify-between items-center text-sm">
+        <div>
+          {{ e[3] }} | <span class="text-indigo-600 font-semibold">{{ e[4] }}</span> - {{ e[1] }}
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="{{ 'text-green-600' if e[2] >= 0 else 'text-red-500' }} font-semibold">${{ e[2] }}</span>
+          <a href="/delete/{{ e[0] }}" class="text-red-500 hover:text-red-700 text-lg">🗑️</a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const ctx = document.getElementById('categoryChart').getContext('2d');
+    const categoryLabels = JSON.parse('{{ labels|tojson|safe }}');
+    const categoryData = JSON.parse('{{ data|tojson|safe }}');
+
+    const categoryChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: categoryLabels,
+        datasets: [{
+          label: 'Expense by Category',
+          data: categoryData,
+          backgroundColor: ['#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#EF4444']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
