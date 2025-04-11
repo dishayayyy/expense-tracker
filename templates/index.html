@@ -1,73 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Expense Tracker</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
-  <div class="max-w-2xl mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-    <h1 class="text-3xl font-bold mb-6 text-center text-indigo-600">Expense Tracker</h1>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="p-4 md:p-6 max-w-4xl mx-auto">
+        <h1 class="text-2xl md:text-3xl font-bold mb-4">Welcome, {{ current_user.username }} 👋</h1>
 
-    <form action="/set-budget" method="post" class="mb-4 flex gap-2">
-      <input type="number" name="total" step="0.01" placeholder="Set your budget" value="{{ budget }}" required class="flex-1 p-2 border rounded">
-      <button type="submit" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">💾 Save Budget</button>
-    </form>
+        <!-- Budget Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="p-4 bg-gray-800 rounded shadow">
+                <p class="text-gray-400">Budget</p>
+                <p class="text-xl font-semibold">₹{{ budget }}</p>
+            </div>
+            <div class="p-4 bg-gray-800 rounded shadow">
+                <p class="text-gray-400">Spent</p>
+                <p class="text-xl font-semibold text-red-400">₹{{ spent }}</p>
+            </div>
+            <div class="p-4 bg-gray-800 rounded shadow">
+                <p class="text-gray-400">Remaining</p>
+                <p class="text-xl font-semibold text-green-400">₹{{ remaining }}</p>
+            </div>
+        </div>
 
-    <form action="/add_credit" method="post" class="mb-6 flex gap-2">
-      <input type="number" name="amount" step="0.01" placeholder="Add credit" required class="flex-1 p-2 border rounded">
-      <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Add Credit</button>
-    </form>
+        <!-- Budget/Credit Form -->
+        <form method="post" class="flex flex-col md:flex-row gap-4 mb-6">
+            <input type="number" step="0.01" name="budget" placeholder="Set new budget" class="px-4 py-2 rounded bg-gray-700 border border-gray-600 w-full">
+            <input type="number" step="0.01" name="credit" placeholder="Add credit" class="px-4 py-2 rounded bg-gray-700 border border-gray-600 w-full">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded">Update</button>
+        </form>
 
-    <div class="grid grid-cols-2 gap-4 text-center text-lg font-semibold mb-6">
-      <div class="bg-green-100 p-4 rounded shadow">💸 Spent: <span class="text-green-600">${{ total_spent }}</span></div>
-      <div class="bg-yellow-100 p-4 rounded shadow">🧾 Remaining: <span class="text-yellow-600">${{ remaining }}</span></div>
+        <!-- Add Expense Link -->
+        <a href="{{ url_for('add') }}" class="inline-block mb-4 text-blue-400 hover:underline">➕ Add New Expense</a>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="mb-4">
+                {% for msg in messages %}
+                    <li class="text-yellow-400">{{ msg }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Expenses Table -->
+        <div class="overflow-x-auto mb-8">
+            <table class="w-full bg-gray-800 rounded">
+                <thead>
+                    <tr class="text-left border-b border-gray-700">
+                        <th class="py-2 px-4">Amount (₹)</th>
+                        <th class="py-2 px-4">Category</th>
+                        <th class="py-2 px-4">Note</th>
+                        <th class="py-2 px-4">Date</th>
+                        <th class="py-2 px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                        <tr class="border-b border-gray-700">
+                            <td class="py-2 px-4">{{ expense.amount }}</td>
+                            <td class="py-2 px-4">{{ expense.category }}</td>
+                            <td class="py-2 px-4">{{ expense.note }}</td>
+                            <td class="py-2 px-4">{{ expense.date }}</td>
+                            <td class="py-2 px-4">
+                                <a href="{{ url_for('edit_expense', expense_id=expense['id']) }}" class="text-blue-400 hover:underline">Edit</a>
+                                |
+                                <a href="{{ url_for('delete_expense', expense_id=expense['id']) }}" class="text-red-400 hover:underline" onclick="return confirm('Are you sure?')">Delete</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Responsive Chart -->
+        <div class="h-64 mb-10">
+            <canvas id="pieChart" class="w-full max-w-sm mx-auto"></canvas>
+        </div>
     </div>
 
-    <canvas id="categoryChart" class="mb-8"></canvas>
-
-    <a href="/add" class="block text-center mb-4 text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded">➕ Add Expense</a>
-
-    <a href="/clear" class="block text-center mb-6 text-red-500 hover:text-red-700">🧹 Clear All Expenses</a>
-
-    <ul class="space-y-4">
-      {% for e in expenses %}
-      <li class="p-4 bg-gray-50 border rounded shadow-sm flex justify-between items-center text-sm">
-        <div>
-          {{ e[3] }} | <span class="text-indigo-600 font-semibold">{{ e[4] }}</span> - {{ e[1] }}
-        </div>
-        <div class="flex items-center space-x-4">
-          <span class="{{ 'text-green-600' if e[2] >= 0 else 'text-red-500' }} font-semibold">${{ e[2] }}</span>
-          <a href="/delete/{{ e[0] }}" class="text-red-500 hover:text-red-700 text-lg">🗑️</a>
-        </div>
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    const ctx = document.getElementById('categoryChart').getContext('2d');
-    const categoryLabels = JSON.parse('{{ labels|tojson|safe }}');
-    const categoryData = JSON.parse('{{ data|tojson|safe }}');
-
-    const categoryChart = new Chart(ctx, {
-      type: 'pie',
-      data: {
-        labels: categoryLabels,
-        datasets: [{
-          label: 'Expense by Category',
-          data: categoryData,
-          backgroundColor: ['#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#EF4444']
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom' }
-        }
-      }
-    });
-  </script>
+    <!-- Chart Script -->
+    <script>
+        const expenseData = {{ pie_data | tojson }};
+        const ctx = document.getElementById('pieChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(expenseData),
+                datasets: [{
+                    label: 'Expenses by Category',
+                    data: Object.values(expenseData),
+                    backgroundColor: ['#34d399', '#f87171', '#60a5fa', '#facc15', '#a78bfa', '#fb923c'],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

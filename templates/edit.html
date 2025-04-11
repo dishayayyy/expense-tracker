@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-xl font-bold mb-4 text-white">Edit Expense</h2>
+
+<form method="POST" class="space-y-4 max-w-md">
+  <input type="number" name="amount" step="0.01" class="w-full p-2 rounded bg-gray-800 text-white" value="{{ expense['amount'] }}" required>
+  <input type="text" name="category" class="w-full p-2 rounded bg-gray-800 text-white" value="{{ expense['category'] }}" required>
+  <input type="text" name="note" class="w-full p-2 rounded bg-gray-800 text-white" value="{{ expense['note'] }}">
+  <input type="date" name="date" class="w-full p-2 rounded bg-gray-800 text-white" value="{{ expense['date'] }}" required>
+
+  <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Update</button>
+  <a href="{{ url_for('index') }}" class="text-gray-400 ml-4">Cancel</a>
+</form>
+{% endblock %}
